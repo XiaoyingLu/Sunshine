@@ -23,7 +23,7 @@
             android:parentActivityName=".MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".MainActivity"/>
+                android:value=".MainActivity" />
         </activity>
         <activity
             android:name=".SettingsActivity"
@@ -31,12 +31,20 @@
             android:parentActivityName=".MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".MainActivity"/>
+                android:value=".MainActivity" />
         </activity>
+
         <provider
+            android:name=".data.WeatherProvider"
             android:authorities="com.udacity.sunshine"
-            android:name=".data.WeatherProvider">
-        </provider>
+            android:enabled="true"
+            android:exported="true"
+            android:permission="com.myapp.LICENSE_TO_KILL"></provider>
     </application>
 
+    <permission
+        android:name="com.myapp.LICENSE_TO_KILL"
+        android:label="Licenced to Kill"
+        android:protectionLevel="dangerous">
+    </permission>
 </manifest>
