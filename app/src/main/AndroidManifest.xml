@@ -4,6 +4,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -37,20 +41,37 @@
 
         <provider
             android:name=".data.WeatherProvider"
-            android:authorities="com.udacity.sunshine"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="com.myapp.LICENSE_TO_KILL"></provider>
+            android:authorities="@string/content_authority"
+            android:syncable="true"
+            android:exported="false"></provider>
 
-        <service
-            android:name=".service.SunshineService"></service>
+        <!--<service-->
+            <!--android:name=".service.SunshineService"></service>-->
+        <!--<receiver android:name=".service.SunshineService$AlarmReceiver" android:enabled="true"/>-->
 
-        <receiver android:name=".service.SunshineService$AlarmReceiver" android:enabled="true"/>
+        <service android:name=".sync.SunshineAuthenticatorService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator"/>
+        </service>
+
+        <service android:name=".sync.SunshineSyncService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter" />
+            </intent-filter>
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter" />
+        </service>
     </application>
 
-    <permission
-        android:name="com.myapp.LICENSE_TO_KILL"
-        android:label="Licenced to Kill"
-        android:protectionLevel="dangerous">
-    </permission>
+    <!--<permission-->
+        <!--android:name="com.myapp.LICENSE_TO_KILL"-->
+        <!--android:label="Licenced to Kill"-->
+        <!--android:protectionLevel="dangerous">-->
+    <!--</permission>-->
 </manifest>

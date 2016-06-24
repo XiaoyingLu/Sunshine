@@ -203,11 +203,11 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
             boolean isMetric = Utility.isMetric(getActivity());
 
             double high = data.getDouble(COL_WEATHER_MAX_TEMP);
-            String highString = Utility.formatTemperature(getActivity(), high, isMetric);
+            String highString = Utility.formatTemperature(getActivity(), high);
             mHighTempView.setText(highString);
 
             double low = data.getDouble(COL_WEATHER_MAX_TEMP);
-            String lowString = Utility.formatTemperature(getActivity(), high, isMetric);
+            String lowString = Utility.formatTemperature(getActivity(), high);
             mLowTempView.setText(lowString);
 
             float humidity = data.getFloat(COL_WEAHTER_HUMIDITY);

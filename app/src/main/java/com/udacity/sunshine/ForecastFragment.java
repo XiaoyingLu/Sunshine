@@ -1,8 +1,5 @@
 package com.udacity.sunshine;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -12,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,7 +20,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.udacity.sunshine.data.WeatherContract;
-import com.udacity.sunshine.service.SunshineService;
+import com.udacity.sunshine.sync.SunshineSyncAdapter;
 
 /**
  * Created by Administrator on 2016/5/31.
@@ -65,6 +63,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private boolean mUseTodayLayout;
 
     private static final String SELECTED_KEY = "selected_position";
+    public static final String LOG_TAG = ForecastFragment.class.getSimpleName();
 
     /**
      * A callback interface that all activities containing this fragment must
@@ -92,11 +91,51 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_refresh) {
-            updateWeather();
+//        if (id == R.id.action_refresh) {
+//            updateWeather();
+//            return true;
+//        }
+        if (id == R.id.action_map){
+            openPreferredLocationInMap();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openPreferredLocationInMap() {
+//        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+//        String location = sharedPrefs.getString(
+//                getString(R.string.pref_location_key),
+//                getString(R.string.pref_location_default));
+
+//        String location = Utility.getPreferredLocation(getContext());
+
+        // Using the URI scheme for showing a location found on a map. This super-handy
+        // intent can is detailed in the "Common Intents" page of Android's developer site:
+        // http://developer.android.com/guide/components/intents-common.html#Maps
+
+//        Uri geoLocation = Uri.parse("geo:0,0?").buildUpon()
+//                .appendQueryParameter("q", location)
+//                .build();
+
+        if(null != mForecastAdapter){
+            Cursor c = mForecastAdapter.getCursor();
+            if(null != c){
+                c.moveToPosition(0);
+                String posLat = c.getString(COL_COORD_LAT);
+                String posLong = c.getString(COL_COORD_LONG);
+                Uri geoLocation = Uri.parse("geo:" + posLat + "," + posLong);
+
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(geoLocation);
+
+                if(intent.resolveActivity(getActivity().getPackageManager()) != null){
+                    startActivity(intent);
+                }else {
+                    Log.d(LOG_TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed!");
+                }
+            }
+        }
     }
 
     private void updateWeather() {
@@ -106,18 +145,20 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 //        FetchWeatherTask weatherTask = new FetchWeatherTask(getActivity());
 //        String location = Utility.getPreferredLocation(getActivity());
 //        weatherTask.execute(location);
-        Intent alarmIntent = new Intent(getActivity(), SunshineService.AlarmReceiver.class);
-        alarmIntent.putExtra(SunshineService.LOCATION_QUERY_EXTRA, Utility.getPreferredLocation(getActivity()));
 
-        PendingIntent pi = PendingIntent.getBroadcast(getActivity(), 0, alarmIntent, PendingIntent.FLAG_ONE_SHOT);
-        AlarmManager am = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
-        am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis()+5000, pi);
+//        Intent alarmIntent = new Intent(getActivity(), SunshineService.AlarmReceiver.class);
+//        alarmIntent.putExtra(SunshineService.LOCATION_QUERY_EXTRA, Utility.getPreferredLocation(getActivity()));
+//
+//        PendingIntent pi = PendingIntent.getBroadcast(getActivity(), 0, alarmIntent, PendingIntent.FLAG_ONE_SHOT);
+//        AlarmManager am = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
+//        am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis()+5000, pi);
+//
+//        Intent intent = new Intent(getActivity(), SunshineService.class);
+//        intent.putExtra(SunshineService.LOCATION_QUERY_EXTRA,
+//                Utility.getPreferredLocation(getActivity()));
+//        getActivity().startService(intent);
 
-        Intent intent = new Intent(getActivity(), SunshineService.class);
-        intent.putExtra(SunshineService.LOCATION_QUERY_EXTRA,
-                Utility.getPreferredLocation(getActivity()));
-        getActivity().startService(intent);
-
+        SunshineSyncAdapter.syncImmediately(getActivity());
     }
 
 //    @Override
