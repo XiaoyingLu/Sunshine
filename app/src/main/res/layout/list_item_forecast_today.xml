@@ -13,6 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:layout_marginLeft="60dp"
+        android:layout_marginStart="60dp"
         android:layout_marginBottom="16dp"
         android:orientation="vertical">
         <TextView
@@ -42,6 +43,7 @@
         android:layout_weight="5"
         android:layout_height="wrap_content"
         android:layout_marginRight="16dp"
+        android:layout_marginEnd="16dp"
         android:gravity="center_horizontal|bottom"
         android:orientation="vertical">
         <ImageView
