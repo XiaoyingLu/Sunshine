@@ -21,6 +21,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.udacity.sunshine.data.WeatherContract;
 
 /**
@@ -187,7 +188,12 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
 
         if( data != null && data.moveToFirst()) {
             int weatherId = data.getInt(COL_WEAHTER_CONDITION_ID);
-            mIconView.setImageResource(Utility.getArtResourceForWeatherCondition(weatherId));
+//            mIconView.setImageResource(Utility.getArtResourceForWeatherCondition(weatherId));
+            Glide.with(this)
+                    .load(Utility.getArtUrlForWeatherCondition(getActivity(), weatherId))
+                    .error(Utility.getArtResourceForWeatherCondition(weatherId))
+                    .crossFade()
+                    .into(mIconView);
 
             long date = data.getLong(COL_WEATHER_DATE);
             String friendlyDateText = Utility.getDayName(getActivity(), date);
