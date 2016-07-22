@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.udacity.sunshine">
+<manifest package="com.udacity.sunshine"
+          xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Permissions required for Google Cloud Messaging -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVER"/>
+    <permission android:name="com.udacity.sunshine.permission.C2D_MESSAGE"
+                android:protectionLevel="signature"/>
+    <uses-permission android:name="com.udacity.sunshine.permission.C2D_MESSAGE"/>
 
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
@@ -18,9 +25,9 @@
         android:theme="@style/AppTheme">
         <activity android:name=".MainActivity">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
         <activity
@@ -29,7 +36,7 @@
             android:parentActivityName=".MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".MainActivity" />
+                android:value=".MainActivity"/>
         </activity>
         <activity
             android:name=".SettingsActivity"
@@ -38,17 +45,17 @@
             android:theme="@style/SettingsTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".MainActivity" />
+                android:value=".MainActivity"/>
         </activity>
 
         <provider
             android:name=".data.WeatherProvider"
             android:authorities="@string/content_authority"
-            android:syncable="true"
-            android:exported="false"></provider>
+            android:exported="false"
+            android:syncable="true"></provider>
 
         <!--<service-->
-            <!--android:name=".service.SunshineService"></service>-->
+        <!--android:name=".service.SunshineService"></service>-->
         <!--<receiver android:name=".service.SunshineService$AlarmReceiver" android:enabled="true"/>-->
 
         <service android:name=".sync.SunshineAuthenticatorService">
@@ -61,19 +68,48 @@
         </service>
 
         <service android:name=".sync.SunshineSyncService"
-            android:exported="true">
+                 android:exported="true">
             <intent-filter>
-                <action android:name="android.content.SyncAdapter" />
+                <action android:name="android.content.SyncAdapter"/>
             </intent-filter>
             <meta-data
                 android:name="android.content.SyncAdapter"
-                android:resource="@xml/syncadapter" />
+                android:resource="@xml/syncadapter"/>
         </service>
+
+        <!-- The Google Cloud Messaging receiver and services -->
+        <service android:name=".gcm.MyGcmListenerService"
+                 android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE"/>
+            </intent-filter>
+        </>
+        <service android:name=".gcm.MyInstanceIDListenerService"
+                 android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name=".gcm.RegistrationIntentService"
+            android:exported="false">
+        </service>
+
+        <receiver android:name="com.google.android.gms.gcm.GcmReceiver"
+                  android:exported="true"
+                  android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE"/>
+                <action android:name="com.google.android.c2dm.intent.REGISTRATION"/>
+                <category android:name="com.udacity.sunshine"/>
+            </intent-filter>
+        </receiver>
+
     </application>
 
     <!--<permission-->
-        <!--android:name="com.myapp.LICENSE_TO_KILL"-->
-        <!--android:label="Licenced to Kill"-->
-        <!--android:protectionLevel="dangerous">-->
+    <!--android:name="com.myapp.LICENSE_TO_KILL"-->
+    <!--android:label="Licenced to Kill"-->
+    <!--android:protectionLevel="dangerous">-->
     <!--</permission>-->
 </manifest>
