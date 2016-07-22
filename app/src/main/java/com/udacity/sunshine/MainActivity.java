@@ -1,15 +1,19 @@
 package com.udacity.sunshine;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.udacity.sunshine.gcm.RegistrationIntentService;
 import com.udacity.sunshine.sync.SunshineSyncAdapter;
 
 public class MainActivity extends AppCompatActivity implements ForecastFragment.Callback {
@@ -26,6 +30,10 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 //        if (savedInstanceState == null) {
 //            getSupportFragmentManager().beginTransaction()
 //                    .add(R.id.container, new ForecastFragment(), FORECASTFRAGMENT_TAG)
@@ -51,7 +59,8 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             getSupportActionBar().setElevation(0f);
         }
 
-        ForecastFragment forecastFragment = (ForecastFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_forecast);
+        ForecastFragment forecastFragment = (ForecastFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.fragment_forecast);
         forecastFragment.setUseTodayLayout(!mTwoPane);
 
         SunshineSyncAdapter.initializeSyncAdapter(this);
@@ -60,6 +69,13 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             // This is where we could either prompt a user that they should install
             // the latest version of Google Play Services, or add an error snackbar
             // that some features won't be available.
+            SharedPreferences sharedPreferences =
+                    PreferenceManager.getDefaultSharedPreferences(this);
+            boolean sentToken = sharedPreferences.getBoolean(SENT_TOKEN_TO_SERVER, false);
+            if (!sentToken){
+                Intent intent = new Intent(this, RegistrationIntentService.class);
+                startService(intent);
+            }
         }
     }
 
