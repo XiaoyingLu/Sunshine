@@ -96,21 +96,6 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-//        inflater.inflate(R.menu.detailfragment, menu);
-//
-//        // Retrieve the share menu item
-//        MenuItem menuItem = menu.findItem(R.id.action_share);
-//
-//        // Get the provider and hold onto it to set/change the share intent.
-//        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(menuItem);
-//
-//        // Attach an intent to this ShareActionProvider. You can update this at any time,
-//        // like when the user selects a new piece of data they might like to share.
-//        if(mForecast != null){
-//            mShareActionProvider.setShareIntent(createShareForecastIntent());
-//        }else{
-//            Log.d(LOG_TAG, "Share Action Provider is null?");
-//        }
 
         if ( getActivity() instanceof DetailActivity ){
             // Inflate the menu; this adds items to the action bar if it is present.
@@ -147,14 +132,6 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         mPressureView = (TextView) rootView.findViewById(R.id.detail_pressure_textview);
         mPressureLabelView = (TextView) rootView.findViewById(R.id.detail_pressure_label_textview);
 
-//        Intent intent = getActivity().getIntent();
-//        if (intent != null) {
-//            mForecastStr = intent.getDataString();
-//        }
-//        mForecastStr = intent.getStringExtra(Intent.EXTRA_TEXT);
-//        ((TextView) rootView.findViewById(R.id.detail_text)).setText(mForecast);
-//
-//
         return rootView;
     }
 
@@ -243,8 +220,8 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
             String highString = Utility.formatTemperature(getActivity(), high);
             mHighTempView.setText(highString);
 
-            double low = data.getDouble(COL_WEATHER_MAX_TEMP);
-            String lowString = Utility.formatTemperature(getActivity(), high);
+            double low = data.getDouble(COL_WEATHER_MIN_TEMP);
+            String lowString = Utility.formatTemperature(getActivity(), low);
             mLowTempView.setText(lowString);
 
             float humidity = data.getFloat(COL_WEAHTER_HUMIDITY);
