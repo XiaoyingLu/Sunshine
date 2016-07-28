@@ -10,7 +10,14 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.support.design.widget.Snackbar;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.ImageView;
 
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlacePicker;
+import com.google.android.gms.maps.model.LatLng;
 import com.udacity.sunshine.data.WeatherContract;
 import com.udacity.sunshine.sync.SunshineSyncAdapter;
 
@@ -28,6 +35,9 @@ import com.udacity.sunshine.sync.SunshineSyncAdapter;
 public class SettingsActivity extends PreferenceActivity
         implements Preference.OnPreferenceChangeListener, SharedPreferences.OnSharedPreferenceChangeListener {
 
+    protected final static int PLACE_PICKER_REQUEST = 9090;
+    private ImageView mAttribution;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +49,18 @@ public class SettingsActivity extends PreferenceActivity
         bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_location_key)));
         bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_units_key)));
         bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_art_pack_key)));
+
+        // If we are using a PlacePicker location, we need to show attributions.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            mAttribution = new ImageView(this);
+            mAttribution.setImageResource(R.drawable.powered_by_google_light);
+
+            if (!Utility.isLocationLatLonAvailable(this)) {
+                mAttribution.setVisibility(View.GONE);
+            }
+
+            setListFooter(mAttribution);
+        }
     }
 
     // Registers a shared preference change listener that gets notified when preferences change
@@ -69,15 +91,14 @@ public class SettingsActivity extends PreferenceActivity
 
         // Trigger the listener immediately with the preference's
         // current value.
-        onPreferenceChange(preference,
+        setPreferenceSummary(preference,
                 PreferenceManager
                         .getDefaultSharedPreferences(preference.getContext())
                         .getString(preference.getKey(), ""));
     }
 
-    @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
-        String stringValue = newValue.toString();
+    private void setPreferenceSummary(Preference preference, Object value) {
+        String stringValue = value.toString();
         String key = preference.getKey();
 
         if (preference instanceof ListPreference) {
@@ -95,10 +116,10 @@ public class SettingsActivity extends PreferenceActivity
                     preference.setSummary(stringValue);
                     break;
                 case SunshineSyncAdapter.LOCATION_STATUS_UNKNOWN:
-                    preference.setSummary(getString(R.string.pref_location_unknown_description, newValue.toString()));
+                    preference.setSummary(getString(R.string.pref_location_unknown_description, value.toString()));
                     break;
                 case SunshineSyncAdapter.LOCATION_STATUS_INVALID:
-                    preference.setSummary(getString(R.string.pref_location_error_description, newValue.toString()));
+                    preference.setSummary(getString(R.string.pref_location_error_description, value.toString()));
                     break;
                 default:
                     // Note --- if the server is down we still assume the value is valid
@@ -108,9 +129,14 @@ public class SettingsActivity extends PreferenceActivity
             //For other preferences, set the summary to the value's simple string representation
             preference.setSummary(stringValue);
         }
-        return true;
     }
 
+
+    @Override
+    public boolean onPreferenceChange(Preference preference, Object value) {
+        setPreferenceSummary(preference, value);
+        return true;
+    }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
     @Override
@@ -122,21 +148,86 @@ public class SettingsActivity extends PreferenceActivity
     // start our synchronization here
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals(getString(R.string.pref_location_key))){
+        if (key.equals(getString(R.string.pref_location_key))) {
             // we've changed the location
-            // first clear locationStatus
+            // Wipe out any potential PlacePicker latlon values so that we can use this text entry.
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.remove(getString(R.string.pref_location_latitude));
+            editor.remove(getString(R.string.pref_location_longitude));
+            editor.commit();
+
+            // Remove attributions for our any PlacePicker locations.
+            if (mAttribution != null) {
+                mAttribution.setVisibility(View.GONE);
+            }
+
             Utility.resetLocationStatus(this);
             SunshineSyncAdapter.syncImmediately(this);
-        } else if (key.equals(getString(R.string.pre_units_label))){
+        } else if (key.equals(getString(R.string.pre_units_label))) {
             // units have changed. update the lists of weather entries accordingly
             getContentResolver().notifyChange(WeatherContract.WeatherEntry.CONTENT_URI, null);
-        } else if (key.equals(getString(R.string.pref_location_status_key))){
+        } else if (key.equals(getString(R.string.pref_location_status_key))) {
             // our location status has changed. Update the summary accordingly
             Preference locationPreference = findPreference(getString(R.string.pref_location_key));
             bindPreferenceSummaryToValue(locationPreference);
-        } else if (key.equals(getString(R.string.pref_art_pack_key))){
+        } else if (key.equals(getString(R.string.pref_art_pack_key))) {
             // art pack have changed. Update lists of weather entries accordingly
             getContentResolver().notifyChange(WeatherContract.WeatherEntry.CONTENT_URI, null);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Check if the result is from our Place Picker intent
+        if (requestCode == PLACE_PICKER_REQUEST) {
+            // Make sure the request was successful
+            if (resultCode == RESULT_OK) {
+                Place place = PlacePicker.getPlace(data, this);
+                String address = place.getAddress().toString();
+                LatLng latLong = place.getLatLng();
+
+                // If the provided place doesn't have an address, we'll form a display-friendly
+                // string from the latlng values.
+                if (TextUtils.isEmpty(address)) {
+                    address = String.format("(%.2f, %.2f)", latLong.latitude, latLong.longitude);
+                }
+
+                SharedPreferences sharedPreferences =
+                        PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString(getString(R.string.pref_location_key), address);
+
+                // Also store the latitude and longitude so that we can use these to get a precise
+                // result from our weather service. We cannot expect the weather service to
+                // understand addresses that Google formats.
+                editor.putFloat(getString(R.string.pref_location_latitude),
+                        (float) latLong.latitude);
+                editor.putFloat(getString(R.string.pref_location_longitude),
+                        (float) latLong.longitude);
+                editor.commit();
+
+                // Tell the SyncAdapter that we've changed the location, so that we can update
+                // our UI with new values. We need to do this manually because we are responding
+                // to the PlacePicker widget result here instead of allowing the
+                // LocationEditTextPreference to handle these changes and invoke our callbacks.
+                Preference locationPreference = findPreference(getString(R.string.pref_location_key));
+                setPreferenceSummary(locationPreference, address);
+
+                // Add attributions for our new PlacePicker location.
+                if (mAttribution != null) {
+                    mAttribution.setVisibility(View.VISIBLE);
+                } else {
+                    // For pre-Honeycomb devices, we cannot add a footer, so we will use a snackbar
+                    View rootView = findViewById(android.R.id.content);
+                    Snackbar.make(rootView, getString(R.string.attribution_text),
+                            Snackbar.LENGTH_LONG).show();
+                }
+
+                Utility.resetLocationStatus(this);
+                SunshineSyncAdapter.syncImmediately(this);
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
         }
     }
 }
