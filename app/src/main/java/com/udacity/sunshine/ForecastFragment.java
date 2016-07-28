@@ -1,11 +1,13 @@
 package com.udacity.sunshine;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.TypedArray;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -23,6 +25,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -208,24 +211,24 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
         mRecyclerView.setAdapter(mForecastAdapter);
 
-//        mRecyclerView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//
-//            @Override
-//            public void onItemClick(AdapterView adapterView, View view, int position, long l) {
-//                // CursorAdapter returns a cursor at the correct position for getItem(), or null
-//                // if it cannot seek to that position.
-//                Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
-//                if (cursor != null) {
-//                    String locationSetting = Utility.getPreferredLocation(getActivity());
-//
-//                    ((Callback) getActivity())
-//                            .onItemSelected(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(
-//                                    locationSetting, cursor.getLong(COL_WEATHER_DATE)
-//                            ));
-//                    mPosition = position;
-//                }
-//            }
-//        });
+        final View parallaxView = rootView.findViewById(R.id.parallax_bar);
+        if (null != parallaxView) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+                    @Override
+                    public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                        super.onScrolled(recyclerView, dx, dy);
+                        int max = parallaxView.getHeight();
+                        if (dy > 0) {
+                            parallaxView.setTranslationY(Math.max(-max, parallaxView.getTranslationY() - dy / 2));
+                        } else {
+                            parallaxView.setTranslationY(Math.min(0, parallaxView.getTranslationY() - dy / 2));
+                        }
+                    }
+                });
+            }
+        }
 
         // If there's instance state, mine it for useful information.
         // The end-goal here is that the user never knows that turning their device sideways
@@ -281,6 +284,34 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             mRecyclerView.smoothScrollToPosition(mPosition);
         }
         updateEmptyView();
+        if ( cursor.getCount() > 0 ) {
+            mRecyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    // Since we know we're going to get items, we keep the listener around until
+                    // we see Children.
+                    if (mRecyclerView.getChildCount() > 0) {
+                        mRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this);
+                        int itemPosition = mForecastAdapter.getSelectedItemPosition();
+                        if ( RecyclerView.NO_POSITION == itemPosition ) itemPosition = 0;
+                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(itemPosition);
+                        if ( null != vh && mAutoSelectView ) {
+                            mForecastAdapter.selectView( vh );
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (null != mRecyclerView) {
+            mRecyclerView.clearOnScrollListeners();
+        }
     }
 
     @Override

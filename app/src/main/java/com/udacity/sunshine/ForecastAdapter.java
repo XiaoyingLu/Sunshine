@@ -166,6 +166,10 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
         mUseTodayLayout = useTodayLayout;
     }
 
+    public int getSelectedItemPosition() {
+        return mICM.getSelectedItemPosition();
+    }
+
     @Override
     public int getItemViewType(int position) {
         return (position == 0 && mUseTodayLayout) ? VIEW_TYPE_TODAY : VIEW_TYPE_FUTURE_DAY;
