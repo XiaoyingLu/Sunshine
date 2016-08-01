@@ -82,6 +82,7 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private int mChoiceMode;
     private boolean mAutoSelectView;
     private boolean mHoldForTransition;
+    private long mInitialSelectedDate = -1;
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
@@ -311,13 +312,10 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
         mForecastAdapter.swapCursor(cursor);
-        if(mPosition != ListView.INVALID_POSITION){
-            // If we don't need to restart the loader, and there's a desired position to restore
-            // to, do so now.
-            mRecyclerView.smoothScrollToPosition(mPosition);
-        }
         updateEmptyView();
-        if ( cursor.getCount() > 0 ) {
+        if ( cursor.getCount() == 0 ) {
+            getActivity().supportStartPostponedEnterTransition();
+        } else {
             mRecyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                 @Override
                 public boolean onPreDraw() {
@@ -326,7 +324,22 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                     if (mRecyclerView.getChildCount() > 0) {
                         mRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this);
                         int itemPosition = mForecastAdapter.getSelectedItemPosition();
-                        if ( RecyclerView.NO_POSITION == itemPosition ) itemPosition = 0;
+                        if ( RecyclerView.NO_POSITION == itemPosition  && -1 != mInitialSelectedDate){
+                            Cursor data = mForecastAdapter.getCursor();
+                            int count = data.getCount();
+                            int dataColumn = data.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_DATE);
+                            for (int i = 0; i < count; i++) {
+                                data.moveToPosition(i);
+                                if (data.getLong(dataColumn) == mInitialSelectedDate) {
+                                    itemPosition = i;
+                                    break;
+                                }
+                            }
+                        }
+                        if (RecyclerView.NO_POSITION == itemPosition)   itemPosition = 0;
+                        // If we don't need to restart the loader, and there's a desired position to restore
+                        // to, do so now.
+                        mRecyclerView.smoothScrollToPosition(itemPosition);
                         RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(itemPosition);
                         if ( null != vh && mAutoSelectView ) {
                             mForecastAdapter.selectView( vh );
@@ -368,6 +381,10 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         loader.startLoading();
     }
 
+    public void setInitialSelectedDate(long initialSelectedDate) {
+        mInitialSelectedDate = initialSelectedDate;
+    }
+
     private void updateEmptyView(){
         if (mForecastAdapter.getItemCount() == 0){
             TextView tv = (TextView) getView().findViewById(R.id.recyclerview_forecast_empty);
@@ -394,4 +411,5 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             }
         }
     }
+
 }
